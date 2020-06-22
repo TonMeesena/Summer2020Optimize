@@ -63,6 +63,11 @@ def get_cost_coeff(item_index, total_time, num_periods, holding_cost, \
             np.dot(np.dot(num_periods_np, d_np), holding_cost_np) -\
                    cost_tolerance)
     coefficient = term1 + term2
+    print('This is it1{}'.format(initial_inventory_np.shape))
+    print('This is it2{}'.format(np.dot(np.dot(num_periods_np, d_np), holding_cost_np).shape))
+    print('This is it3{}'.format(num_periods_np.shape))
+    print('This is itT{}'.format(d_np.shape))
+    print(d_np )
     return coefficient
 
 
@@ -125,6 +130,7 @@ def cost_model(num_items, num_periods, unit_production_time, total_time, \
              - num_periods * total_time * sum(changeover_cost)
 
     # constraint on positive looptime
+    # not the one in the paper
     model += xsum(unit_production_time[i] * Lambda[i] for i in range(num_items)) >= 1
 
     # solve for model
