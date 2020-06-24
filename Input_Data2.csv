@@ -1,0 +1,3 @@
+Item Name,Demand (items),Std Dev Demand (items),Change Over Cost (dollars),Inventory Price per Unit (dollars),Machine cycle time (minutes),Units per machine cycle (items),Initial Inventory (items) ,Trigger Points (items),Monthly,Total Time (minutes):,10080,Cost Tolerance (dollars):,100000000,,
+3.00 MIL PMMA Film  00040300  Green  38 IN,9097,4434,2000,0.105,60,1968,909,0,,,,,,366,1.26
+3.00 MIL PMMA Film  00040300  Green  50 IN,49617,47798,560,0.0975,60,2586,4961,0,,,,,,1994,1.17

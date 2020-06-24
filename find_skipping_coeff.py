@@ -94,8 +94,11 @@ def get_average_baseloop_time(L, J, I0, h, a, trigger_points, D, Lambda, t, Tau,
         for i in range(L):
             # feasibility: meet demand at each time period
             if S[j][i] == 1:
+
+                # number of base loop
                 num_baseloop = math.floor(T / baseloop)
                 production = Lambda[i] * num_baseloop
+                # There is only 1 or 0 item, then there is no changeover cost
                 if sum([coeff for coeff in S[j]]) > 1:
                     total_changeover_cost += a[i] * num_baseloop
                 if production + cur_inventory[i] < D[j][i]:
@@ -105,8 +108,9 @@ def get_average_baseloop_time(L, J, I0, h, a, trigger_points, D, Lambda, t, Tau,
             else:
                 production = 0
 
-            inventory_j.append(production+cur_inventory[i])
+            inventory_j.append(production + cur_inventory[i])
             # update inventory
+            # Not sure about this total holding cost whether it accounts for the leftover or the real current
             cur_inventory[i] = production + cur_inventory[i] - D[j][i]
             # update holding cost
             total_holding_cost += h[i] * cur_inventory[i]
@@ -117,7 +121,7 @@ def get_average_baseloop_time(L, J, I0, h, a, trigger_points, D, Lambda, t, Tau,
         if print_optimal_info: print('Exceeds cost tolerance')
         return -1
 
-    avg_baseloop = total_baseloop/(J)
+    avg_baseloop = total_baseloop / (J)
     if print_optimal_info:
         print('average baseloop time is: ', avg_baseloop)
         print('skipping coefficients: ', S)
@@ -143,7 +147,7 @@ def get_baseloop_skipping(Lambda, t, s):
     '''
     baseloop = 0
     for i in range(len(Lambda)):
-        baseloop += Lambda[i]*t[i]*s[i]
+        baseloop += Lambda[i] * t[i] * s[i]
     return baseloop
 
 
@@ -159,12 +163,17 @@ def get_random_lambdas(optimal_lambda, neighborhood):
     RETURN:
     A new choice of lambdas
     '''
+
+
+
+
+    #comment this neightbor should be matrix
     new_lambda = optimal_lambda.copy()
     for i in range(len(optimal_lambda)):
         generated_val = -1
         while generated_val <= 0:
             generated_val = int(random.uniform(optimal_lambda[i] - neighborhood, \
-                                   optimal_lambda[i] + neighborhood))
+                                               optimal_lambda[i] + neighborhood))
         new_lambda[i] = generated_val
     return new_lambda
 
@@ -218,23 +227,25 @@ def display_simulation_results(optimal_result):
 
 
 def main():
-
     random.seed(0)
 
-    csv_input = BaseLoopInputData('Input_Data.csv')
+    csv_input = BaseLoopInputData('Input_Data2.csv')
     demand_schedule = csv_input.entire_demand_schedule
     unit_production_time = csv_input.all_production_times
     holding_cost = csv_input.inventory_cost
     num_items = len(holding_cost)
     num_periods = len(demand_schedule)
     demand_schedule_init = demand_schedule.copy()
-    demand_schedule_init.insert(0,[0]*num_items)
+    demand_schedule_init.insert(0, [0] * num_items)
     changeover_cost = csv_input.changeover_cost
     initial_inventory = csv_input.initial_inventories
     total_time = csv_input.total_time
     cost_tolerance = csv_input.cost_tolerance
     #trigger_points = csv_input.trigger_points
     trigger_points = [0] * num_items
+
+
+
 
     kwargs = {'num_items': num_items, 'num_periods': num_periods, \
               'unit_production_time': unit_production_time, \
@@ -250,17 +261,19 @@ def main():
     num_simulation = 100000
     neighbourhood = 10
 
-    #'''
+
+    #? do you mean non skipping
+    # '''
     # output of skipping model after simulations
     # [11, 84, 5, 4, 13, 9, 18, 8, 96]
     # Optimal average baseloop: 2.442414905878085
     optimal_lambdas = [11, 84, 5, 4, 13, 9, 18, 8, 96]
     avg_baseloop = get_average_baseloop_time(num_items, num_periods, \
-    initial_inventory, holding_cost, changeover_cost, trigger_points, \
-    demand_schedule, optimal_lambdas, unit_production_time, cost_tolerance, \
-    total_time, True)
+                                             initial_inventory, holding_cost, changeover_cost, trigger_points, \
+                                             demand_schedule, optimal_lambdas, unit_production_time, cost_tolerance, \
+                                             total_time, True)
     print('demand_schedule_init: ', demand_schedule_init)
-    '''
+
     # Run simulations
     feasible_results = random_simulation(num_items, num_periods, \
                                          initial_inventory, holding_cost,\
@@ -271,6 +284,8 @@ def main():
                                          neighbourhood)
     optimal_result = get_optimal_siumulation_results(feasible_results)
     display_simulation_results(optimal_result)
-    '''
+
+
+
 if __name__ == "__main__":
     main()

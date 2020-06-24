@@ -26,6 +26,8 @@ def demand_upto(demand_schedule, current_time, item):
     demand_so_far = 0
     for period in range(current_time):
         demand_so_far += demand_schedule[period][item]
+
+    #print('Demand is {} this is for {} item {} current time {}period and demand so far is{}'.format(demand_schedule,item,current_time,period,demand_so_far))
     return demand_so_far
 
 
@@ -63,11 +65,11 @@ def get_cost_coeff(item_index, total_time, num_periods, holding_cost, \
             np.dot(np.dot(num_periods_np, d_np), holding_cost_np) -\
                    cost_tolerance)
     coefficient = term1 + term2
-    print('This is it1{}'.format(initial_inventory_np.shape))
-    print('This is it2{}'.format(np.dot(np.dot(num_periods_np, d_np), holding_cost_np).shape))
-    print('This is it3{}'.format(num_periods_np.shape))
-    print('This is itT{}'.format(d_np.shape))
-    print(d_np )
+    #print('This is it1{}'.format(num_periods_np.shape))
+    #print('This is it2{}'.format(d_np.shape))
+    #print('This is it3{}'.format(holding_cost_np.shape))
+    #print('This is itT{}'.format(np.dot(np.dot(num_periods_np, d_np), holding_cost_np).shape))
+    #print(d_np )
     return coefficient
 
 
@@ -113,17 +115,20 @@ def cost_model(num_items, num_periods, unit_production_time, total_time, \
                 coeff[k] = unit_production_time[k] * \
                            (initial_inventory[i-1] - \
                             demand_upto(demand_schedule, j, i-1))
+                                 # demand 0 is eliminated
+
             coeff[i-1] += j*total_time
             # add constraints for inventory to meet demand at each time period
             model += xsum(coeff[i] * Lambda[i] for i in range(num_items)) >= 0
             # add coeffs in for cost constraint
-            kwargs = {'num_periods': num_periods, 'unit_production_time': \
+
+        kwargs = {'num_periods': num_periods, 'unit_production_time': \
                       unit_production_time, 'total_time': total_time, \
                       'initial_inventory':initial_inventory, 'cost_tolerance': \
                       cost_tolerance, 'holding_cost': holding_cost, \
                       'demand_schedule_init': demand_schedule_init, \
                       'item_index': i-1}
-            cost_coeff[i-1] = get_cost_coeff(**kwargs)
+        cost_coeff[i-1] = get_cost_coeff(**kwargs)
 
     # cost constraint
     model += xsum(cost_coeff[i] * Lambda[i] for i in range(num_items)) <=\
@@ -131,7 +136,10 @@ def cost_model(num_items, num_periods, unit_production_time, total_time, \
 
     # constraint on positive looptime
     # not the one in the paper
-    model += xsum(unit_production_time[i] * Lambda[i] for i in range(num_items)) >= 1
+    #model += xsum(unit_production_time[i] * Lambda[i] for i in range(num_items)) >= 1
+
+    for i in range(num_items):
+       model+= Lambda[i]>=0
 
     # solve for model
     model.optimize()
