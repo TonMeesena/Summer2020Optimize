@@ -42,6 +42,7 @@ def random_simulation(L, J, I0, h, a, trigger_points, D, t, Tau, T, num_simulati
         if avg_baseloop != -1:
             feasible_results[avg_baseloop] = Lambda
 
+    print('the size of the dictionary is {}'.format(len(feasible_results)))
     return feasible_results
 
 
@@ -89,6 +90,7 @@ def get_average_baseloop_time(L, J, I0, h, a, trigger_points, D, Lambda, t, Tau,
                 # produce this month
                 S[j][i] = 1
         # compute baseloop at time j
+
         baseloop = get_baseloop_skipping(Lambda, t, S[j])
         total_baseloop += baseloop
         for i in range(L):
@@ -97,7 +99,11 @@ def get_average_baseloop_time(L, J, I0, h, a, trigger_points, D, Lambda, t, Tau,
 
                 # number of base loop
                 num_baseloop = math.floor(T / baseloop)
+
                 production = Lambda[i] * num_baseloop
+
+                #print('num_baseloop is{}, production is{}'.format(num_baseloop,production))
+
                 # There is only 1 or 0 item, then there is no changeover cost
                 if sum([coeff for coeff in S[j]]) > 1:
                     total_changeover_cost += a[i] * num_baseloop
@@ -128,6 +134,7 @@ def get_average_baseloop_time(L, J, I0, h, a, trigger_points, D, Lambda, t, Tau,
         print('inventory: ', inventory)
         print('total_holding_cost: ', total_holding_cost)
         print('total_changeover_cost: ', total_changeover_cost)
+        print('total_cost,',total_changeover_cost+total_holding_cost)
 
     return avg_baseloop
 
@@ -148,6 +155,9 @@ def get_baseloop_skipping(Lambda, t, s):
     baseloop = 0
     for i in range(len(Lambda)):
         baseloop += Lambda[i] * t[i] * s[i]
+        #print('baseloop is{}'.format(baseloop))
+
+
     return baseloop
 
 
@@ -202,6 +212,18 @@ def get_optimal_siumulation_results(some_simulation_result):
         return (optimal_avg_baseloop, optimal_lambda)
 
 
+
+def get_optimal_path(some_simulation_result):
+    if len(some_simulation_result) == 0:
+        print('There is no answer')
+    else:
+        for i in sorted(some_simulation_result):
+            print((i,some_simulation_result[i]))
+
+
+
+
+
 def display_simulation_results(optimal_result):
     '''
     Displays the optimal lamdbas and average base loop found in the Simulation
@@ -226,10 +248,91 @@ def display_simulation_results(optimal_result):
         print("***************************")
 
 
+
+def discrete_descent(L, J, I0, h, a, trigger_points, D, t, Tau, T, num_simulation, optimal_lambda, neighbourhood,step):
+
+    '''
+    This function run a descent to find the optimal lambdas
+
+
+    L: number of items
+    J: number of time periods
+    I0: a list of item initial inventories
+    h: inventory cost
+    a: changeover cost
+    trigger_points: a list of item trigger points
+    D: A list of lists containing all item demands in each time period
+    t: a list of time takes to produce one unit of item
+    Tau: cost tolerance
+    T: the total time available to run the loop in each time period
+    num_simulation: the number of simulations for each descent to find the local optimal in a neighborhood
+    optimal_lambda: The optimal lambda from
+    neighbourhood:
+     step:
+    :return:
+    '''
+    #initiate the descent
+    print('This is a discrete descent')
+    init_average_baseloop=get_average_baseloop_time(L, J, I0, h, a, trigger_points, D, optimal_lambda, t, Tau, T, False)
+    print('The initial optimal lambdas are {} and the initial average base loop time is {}'.format(optimal_lambda,\
+                                                                                                   init_average_baseloop))
+    #Global optimal values in the descent
+    global_average_baseloop=init_average_baseloop
+    global_lambda = optimal_lambda
+
+    #Check if it get stuck at a certain point
+    copy_baseloop=init_average_baseloop
+    repeat_count=0
+
+    for i in range(step):
+        # Check whether the new set of lambda changes
+        print('Step: ',i+1)
+        feasible_results = random_simulation(L, J, I0, h, a, trigger_points, D, t, Tau, T, num_simulation,
+                                             optimal_lambda, neighbourhood)
+
+        #Stop when the feasible dictionary is empty
+        if(len(feasible_results)==0):
+            break
+
+
+
+        #Update optimal values
+        optimal_avg_baseloop, optimal_lambda = get_optimal_siumulation_results(feasible_results)
+        print('The average baseloop is {} and the optimal lambda is {}'.format( optimal_avg_baseloop,
+                                                                                       optimal_lambda))
+
+        # Check if it get stuck at a certain point
+        if(copy_baseloop==optimal_avg_baseloop):
+            repeat_count+=1
+            if(repeat_count==10):
+                break
+        else:
+            repeat_count=0
+            copy_baseloop = optimal_avg_baseloop
+
+
+        #update global optimal values
+        if (global_average_baseloop>optimal_avg_baseloop):
+            global_average_baseloop=optimal_avg_baseloop
+            global_lambda=optimal_lambda
+
+    print('**************')
+
+    print('The optimal average base loop time is {} and the optimal lambdas are {}'.format(global_average_baseloop,\
+                                                                                        global_lambda))
+    #To print only
+    global_average_baseloop = get_average_baseloop_time(L, J, I0, h, a, trigger_points, D, global_lambda, t, Tau, T,
+                                                      True)
+
+
+
+
+
+
 def main():
     random.seed(0)
 
-    csv_input = BaseLoopInputData('Input_Data2.csv')
+    csv_input = BaseLoopInputData('Input_Data.csv')
     demand_schedule = csv_input.entire_demand_schedule
     unit_production_time = csv_input.all_production_times
     holding_cost = csv_input.inventory_cost
@@ -258,16 +361,18 @@ def main():
     if optimal_lambdas == -1:
         optimal_lambdas = [random.randint(1, 100) for i in range(num_items)]
 
+
     num_simulation = 100000
     neighbourhood = 10
 
+    print('check lambda is {}'.format(optimal_lambdas))
 
     #? do you mean non skipping
     # '''
     # output of skipping model after simulations
     # [11, 84, 5, 4, 13, 9, 18, 8, 96]
     # Optimal average baseloop: 2.442414905878085
-    optimal_lambdas = [11, 84, 5, 4, 13, 9, 18, 8, 96]
+    #optimal_lambdas = [11, 84, 5, 4, 13, 9, 18, 8, 96]
     avg_baseloop = get_average_baseloop_time(num_items, num_periods, \
                                              initial_inventory, holding_cost, changeover_cost, trigger_points, \
                                              demand_schedule, optimal_lambdas, unit_production_time, cost_tolerance, \
@@ -284,6 +389,35 @@ def main():
                                          neighbourhood)
     optimal_result = get_optimal_siumulation_results(feasible_results)
     display_simulation_results(optimal_result)
+
+    # New
+    print('*********************')
+    print("this is the optimal answer")
+    opt_baseloop = get_average_baseloop_time(num_items, num_periods, \
+                                             initial_inventory, holding_cost, changeover_cost, trigger_points, \
+                                             demand_schedule, optimal_result[1], unit_production_time, cost_tolerance, \
+                                             total_time, True)
+
+    print('*********************')
+
+
+    #Run the descent
+
+    num_simulation_in_descent = 5000
+    neighbourhood_in_descent=2
+    num_steps_in_descent=10000
+
+    discrete_descent(num_items, num_periods, \
+                                         initial_inventory, holding_cost,\
+                                         changeover_cost, trigger_points, \
+                                         demand_schedule, unit_production_time,\
+                                         cost_tolerance, total_time, \
+                                         num_simulation_in_descent, optimal_lambdas, \
+                                         neighbourhood_in_descent,num_steps_in_descent)
+
+
+
+    print('********************')
 
 
 

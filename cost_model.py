@@ -136,7 +136,7 @@ def cost_model(num_items, num_periods, unit_production_time, total_time, \
 
     # constraint on positive looptime
     # not the one in the paper
-    #model += xsum(unit_production_time[i] * Lambda[i] for i in range(num_items)) >= 1
+    # model += xsum(unit_production_time[i] * Lambda[i] for i in range(num_items)) >= 1
 
     for i in range(num_items):
        model+= Lambda[i]>=0
